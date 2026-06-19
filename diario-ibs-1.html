@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Diario IBS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #E7E9DD;
+    --surface: #FBF9F2;
+    --surface-soft: #F2EFE2;
+    --ink: #243329;
+    --ink-muted: #6B7868;
+    --ink-faint: #9AA396;
+    --accent: #9C3B3B;
+    --accent-soft: #D98F73;
+    --accent-pale: #F0DCCB;
+    --line: rgba(36,51,41,0.14);
+    --radius: 16px;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    padding-bottom: 48px;
+  }
+  #app{
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 22px 18px 0;
+  }
+  .eyebrow{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin: 0 0 4px;
+  }
+  h1{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 26px;
+    line-height: 1.15;
+    margin: 0;
+    text-transform: capitalize;
+  }
+  .hero-sub{
+    margin: 6px 0 0;
+    font-size: 14px;
+    color: var(--ink-muted);
+  }
+  .gauge-wrap{
+    margin-top: 18px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .gauge-svg{ width: 92px; height: 92px; flex-shrink: 0; }
+  .gauge-track{ fill:none; stroke: var(--line); stroke-width: 9; }
+  .gauge-fg{
+    fill:none; stroke: var(--accent); stroke-width: 9; stroke-linecap: round;
+    transform: rotate(-90deg); transform-origin: 50% 50%;
+    transition: stroke-dashoffset 0.6s ease;
+  }
+  .gauge-num{
+    font-family: 'Fraunces', serif; font-size: 22px; font-weight: 600;
+    fill: var(--ink);
+  }
+  .gauge-readout{ flex: 1; }
+  .gauge-readout .big{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-muted);
+    display:block;
+  }
+  .gauge-caption{
+    font-size: 13px; color: var(--ink-muted); display:block; margin-top: 2px;
+  }
+  .tabs{
+    display: flex;
+    gap: 6px;
+    margin-top: 22px;
+    background: var(--surface-soft);
+    padding: 4px;
+    border-radius: 999px;
+  }
+  .tab{
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 10px 0;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--ink-muted);
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .tab.active{ background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+  .panel{ display: none; margin-top: 18px; }
+  .panel.active{ display: block; }
+
+  .field{ margin-bottom: 18px; }
+  .field label{
+    display:block; font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 7px;
+  }
+  input[type="datetime-local"], input[type="text"], textarea, select{
+    width: 100%;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    padding: 11px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+  }
+  textarea{ min-height: 70px; resize: vertical; }
+  input:focus, textarea:focus, select:focus, button:focus-visible{
+    outline: 2px solid var(--accent); outline-offset: 1px;
+  }
+  .chips{ display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip{
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    padding: 8px 13px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .chip.active{ background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .slider-row{ display:flex; align-items:center; justify-content: space-between; margin-bottom: 7px; }
+  .slider-val{ font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--accent); font-weight: 500; }
+  input[type="range"]{ width: 100%; accent-color: var(--accent); }
+  .scale-labels{ display:flex; justify-content: space-between; font-size: 11px; color: var(--ink-faint); margin-top: 2px; }
+
+  .submit-btn{
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .submit-btn:active{ opacity: 0.85; }
+
+  .date-heading{
+    font-family: 'Fraunces', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    margin: 22px 0 10px;
+    text-transform: capitalize;
+  }
+  .date-heading:first-child{ margin-top: 0; }
+  .entry-card{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 14px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .entry-top{ display:flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .entry-time{ font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink-muted); }
+  .entry-food{ font-size: 15px; font-weight: 600; margin: 2px 0 8px; }
+  .del-btn{
+    border: none; background: transparent; color: var(--ink-faint); font-size: 18px;
+    line-height: 1; cursor: pointer; padding: 2px 4px;
+  }
+  .entry-symptoms{ display:flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .badge{
+    font-size: 11px; background: var(--accent-pale); color: var(--accent); padding: 3px 9px; border-radius: 999px;
+  }
+  .meter-row{ display:flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-muted); margin-top: 4px; }
+  .dot{ width: 8px; height: 8px; border-radius: 50%; background: var(--line); display: inline-block; }
+  .dot.filled{ background: var(--accent-soft); }
+  .dots{ display:flex; gap: 3px; }
+  .entry-notes{ font-size: 13px; color: var(--ink-muted); margin-top: 8px; font-style: italic; }
+  .empty{ color: var(--ink-muted); font-size: 14px; text-align: center; padding: 30px 10px; }
+
+  .history-actions{ display:flex; gap: 10px; margin-top: 20px; }
+  .ghost-btn{
+    flex: 1; background: var(--surface); border: 1px solid var(--line); color: var(--ink);
+    padding: 11px; border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .ghost-btn.danger{ color: var(--accent); }
+
+  .privacy-note{ font-size: 12px; color: var(--ink-faint); text-align: center; margin: 26px 0 6px; line-height: 1.5; }
+
+  #toast{
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: #fff; padding: 11px 18px; border-radius: 999px;
+    font-size: 13px; opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease;
+    max-width: 90%; text-align:center;
+  }
+  #toast.show{ opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (prefers-reduced-motion: reduce){
+    .gauge-fg, #toast{ transition: none; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <p class="eyebrow">Diario intestinale</p>
+    <h1 id="todayLabel">—</h1>
+    <p class="hero-sub">Come va l'intestino oggi?</p>
+    <div class="gauge-wrap">
+      <svg class="gauge-svg" viewBox="0 0 120 120">
+        <circle class="gauge-track" cx="60" cy="60" r="50"></circle>
+        <circle id="gaugeFg" class="gauge-fg" cx="60" cy="60" r="50" stroke-dasharray="314.159 314.159" stroke-dashoffset="314.159"></circle>
+        <text id="gaugeValue" x="60" y="66" text-anchor="middle" class="gauge-num">–</text>
+      </svg>
+      <div class="gauge-readout">
+        <span class="big">INTENSITÀ MEDIA</span>
+        <span class="gauge-caption" id="gaugeCaption">Nessun dato oggi</span>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="new" type="button">Nuovo</button>
+    <button class="tab" data-tab="history" type="button">Cronologia</button>
+  </nav>
+
+  <section id="panel-new" class="panel active">
+    <form id="entryForm">
+      <div class="field">
+        <label for="dt">Data e ora</label>
+        <input type="datetime-local" id="dt" required>
+      </div>
+
+      <div class="field">
+        <label for="food">Cosa hai mangiato (o bevuto)</label>
+        <input type="text" id="food" placeholder="es. yogurt, banana, caffè">
+      </div>
+
+      <div class="field">
+        <label>Sintomi</label>
+        <div class="chips" id="symptomChips">
+          <button type="button" class="chip" data-symptom="gonfiore">Gonfiore</button>
+          <button type="button" class="chip" data-symptom="dolore">Dolore addominale</button>
+          <button type="button" class="chip" data-symptom="diarrea">Diarrea</button>
+          <button type="button" class="chip" data-symptom="stitichezza">Stitichezza</button>
+          <button type="button" class="chip" data-symptom="nausea">Nausea</button>
+          <button type="button" class="chip" data-symptom="reflusso">Reflusso</button>
+          <button type="button" class="chip" data-symptom="nessuno">Nessun sintomo</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="slider-row"><label for="intensity" style="margin:0;">Intensità sintomi</label><span class="slider-val" id="intensityVal">0</span></div>
+        <input type="range" id="intensity" min="0" max="5" step="1" value="0">
+        <div class="scale-labels"><span>Nessuna</span><span>Molto forte</span></div>
+      </div>
+
+      <div class="field">
+        <div class="slider-row"><label for="stress" style="margin:0;">Livello di stress</label><span class="slider-val" id="stressVal">0</span></div>
+        <input type="range" id="stress" min="0" max="5" step="1" value="0">
+        <div class="scale-labels"><span>Calmo</span><span>Molto stressato</span></div>
+      </div>
+
+      <div class="field">
+        <label for="bowel">Evacuazione (opzionale)</label>
+        <select id="bowel">
+          <option value="">— Non registrato —</option>
+          <option value="Normale">Normale</option>
+          <option value="Diarrea / liquida">Diarrea / liquida</option>
+          <option value="Dura / stitica">Dura / stitica</option>
+          <option value="Mista">Mista</option>
+          <option value="Nessuna oggi">Nessuna oggi</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="notes">Note (opzionale)</label>
+        <textarea id="notes" placeholder="contesto, situazioni, altro..."></textarea>
+      </div>
+
+      <button type="submit" class="submit-btn">Salva inserimento</button>
+    </form>
+  </section>
+
+  <section id="panel-history" class="panel">
+    <div id="historyList"><p class="empty">Caricamento…</p></div>
+    <div class="history-actions">
+      <button class="ghost-btn" id="exportBtn" type="button">Copia riepilogo</button>
+      <button class="ghost-btn danger" id="clearBtn" type="button">Cancella tutto</button>
+    </div>
+  </section>
+
+  <p class="privacy-note">I dati restano salvati solo su questo telefono, in questo browser — non vengono inviati altrove. Se cancelli i dati di navigazione o cambi browser/app, andranno persi: usa "Copia riepilogo" ogni tanto per metterli al sicuro.</p>
+</div>
+<div id="toast" aria-live="polite"></div>
+
+<script>
+const STORAGE_KEY = 'ibs-diary-entries';
+let entries = [];
+const CIRC = 2 * Math.PI * 50;
+
+function localISODate(d = new Date()){
+  const off = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - off * 60000);
+  return local.toISOString().slice(0, 10);
+}
+function nowLocalInputValue(){
+  const d = new Date();
+  const off = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - off * 60000);
+  return local.toISOString().slice(0, 16);
+}
+function esc(str){
+  return (str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+async function loadEntries(){
+  try{
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){
+    return [];
+  }
+}
+async function persistEntries(list){
+  try{
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    return true;
+  }catch(e){
+    showToast('Errore di salvataggio. Lo spazio del browser potrebbe essere pieno.');
+    return false;
+  }
+}
+
+// ---- Tabs ----
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ---- Symptom chips ----
+const symptomButtons = document.querySelectorAll('.chip[data-symptom]');
+symptomButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const val = btn.dataset.symptom;
+    if(val === 'nessuno'){
+      symptomButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }else{
+      document.querySelector('.chip[data-symptom="nessuno"]').classList.remove('active');
+      btn.classList.toggle('active');
+    }
+  });
+});
+
+// ---- Sliders ----
+const intensityInput = document.getElementById('intensity');
+const stressInput = document.getElementById('stress');
+intensityInput.addEventListener('input', () => { document.getElementById('intensityVal').textContent = intensityInput.value; });
+stressInput.addEventListener('input', () => { document.getElementById('stressVal').textContent = stressInput.value; });
+
+// ---- Gauge ----
+function updateGauge(){
+  const today = localISODate();
+  const todays = entries.filter(e => e.dateISO === today);
+  const fg = document.getElementById('gaugeFg');
+  const valEl = document.getElementById('gaugeValue');
+  const captionEl = document.getElementById('gaugeCaption');
+  if(!todays.length){
+    valEl.textContent = '–';
+    fg.style.strokeDashoffset = CIRC;
+    captionEl.textContent = 'Nessun dato oggi';
+    return;
+  }
+  const avg = todays.reduce((s, e) => s + Number(e.intensity), 0) / todays.length;
+  valEl.textContent = avg.toFixed(1);
+  fg.style.strokeDashoffset = CIRC * (1 - avg / 5);
+  captionEl.textContent = todays.length + (todays.length === 1 ? ' inserimento oggi' : ' inserimenti oggi');
+}
+
+// ---- History rendering ----
+function formatDateHeading(dateISO){
+  const today = localISODate();
+  const yd = new Date(); yd.setDate(yd.getDate() - 1);
+  const yesterday = localISODate(yd);
+  if(dateISO === today) return 'Oggi';
+  if(dateISO === yesterday) return 'Ieri';
+  const d = new Date(dateISO + 'T00:00:00');
+  return d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+function dots(value, max = 5){
+  let h = '';
+  for(let i = 1; i <= max; i++) h += `<span class="dot ${i <= value ? 'filled' : ''}"></span>`;
+  return h;
+}
+function entryCardHTML(e){
+  const symptomsHTML = (e.symptoms && e.symptoms.length)
+    ? e.symptoms.map(s => `<span class="badge">${esc(s)}</span>`).join('')
+    : '';
+  const bowelHTML = e.bowel ? `<div class="meter-row">Evacuazione: ${esc(e.bowel)}</div>` : '';
+  const notesHTML = e.notes ? `<div class="entry-notes">${esc(e.notes)}</div>` : '';
+  return `
+    <div class="entry-card">
+      <div class="entry-top">
+        <div>
+          <span class="entry-time">${esc(e.time)}</span>
+          <div class="entry-food">${e.food ? esc(e.food) : 'Nessun cibo registrato'}</div>
+        </div>
+        <button class="del-btn" data-delete="${e.id}" aria-label="Elimina">×</button>
+      </div>
+      <div class="entry-symptoms">${symptomsHTML}</div>
+      <div class="meter-row">Intensità <span class="dots">${dots(e.intensity)}</span></div>
+      <div class="meter-row">Stress <span class="dots">${dots(e.stress)}</span></div>
+      ${bowelHTML}
+      ${notesHTML}
+    </div>`;
+}
+function renderHistory(){
+  const list = document.getElementById('historyList');
+  if(!entries.length){
+    list.innerHTML = '<p class="empty">Nessun inserimento ancora.<br>Aggiungi il tuo primo pasto o sintomo da "Nuovo".</p>';
+    return;
+  }
+  const sorted = [...entries].sort((a, b) => (b.dateISO + b.time).localeCompare(a.dateISO + a.time));
+  let html = '';
+  let lastDate = null;
+  for(const e of sorted){
+    if(e.dateISO !== lastDate){
+      html += `<h3 class="date-heading">${formatDateHeading(e.dateISO)}</h3>`;
+      lastDate = e.dateISO;
+    }
+    html += entryCardHTML(e);
+  }
+  list.innerHTML = html;
+  list.querySelectorAll('[data-delete]').forEach(btn => {
+    btn.addEventListener('click', () => handleDelete(btn.dataset.delete));
+  });
+}
+
+async function handleDelete(id){
+  entries = entries.filter(e => e.id !== id);
+  await persistEntries(entries);
+  renderHistory();
+  updateGauge();
+  showToast('Inserimento eliminato');
+}
+
+// ---- Form submit ----
+document.getElementById('entryForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const dtVal = document.getElementById('dt').value;
+  if(!dtVal){ showToast('Inserisci data e ora'); return; }
+  const [dateISO, time] = dtVal.split('T');
+  const symptoms = Array.from(symptomButtons)
+    .filter(b => b.classList.contains('active'))
+    .map(b => b.textContent.trim());
+
+  const entry = {
+    id: Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+    dateISO, time,
+    food: document.getElementById('food').value.trim(),
+    symptoms,
+    intensity: Number(intensityInput.value),
+    stress: Number(stressInput.value),
+    bowel: document.getElementById('bowel').value,
+    notes: document.getElementById('notes').value.trim()
+  };
+
+  entries.unshift(entry);
+  const ok = await persistEntries(entries);
+  if(ok) showToast('Salvato ✓');
+
+  // reset form
+  document.getElementById('entryForm').reset();
+  document.getElementById('dt').value = nowLocalInputValue();
+  symptomButtons.forEach(b => b.classList.remove('active'));
+  document.getElementById('intensityVal').textContent = '0';
+  document.getElementById('stressVal').textContent = '0';
+
+  renderHistory();
+  updateGauge();
+});
+
+// ---- Export / Clear ----
+document.getElementById('exportBtn').addEventListener('click', async () => {
+  if(!entries.length){ showToast('Nessun dato da esportare'); return; }
+  const sorted = [...entries].sort((a, b) => (a.dateISO + a.time).localeCompare(b.dateISO + b.time));
+  let text = 'DIARIO IBS — riepilogo\n\n';
+  let lastDate = null;
+  for(const e of sorted){
+    if(e.dateISO !== lastDate){ text += `\n${e.dateISO}\n`; lastDate = e.dateISO; }
+    text += `${e.time} — ${e.food || '(nessun cibo)'}\n`;
+    if(e.symptoms.length) text += `  Sintomi: ${e.symptoms.join(', ')}\n`;
+    text += `  Intensità: ${e.intensity}/5 · Stress: ${e.stress}/5\n`;
+    if(e.bowel) text += `  Evacuazione: ${e.bowel}\n`;
+    if(e.notes) text += `  Note: ${e.notes}\n`;
+  }
+  try{
+    await navigator.clipboard.writeText(text);
+    showToast('Riepilogo copiato negli appunti');
+  }catch(e){
+    showToast('Impossibile copiare automaticamente');
+  }
+});
+
+document.getElementById('clearBtn').addEventListener('click', async () => {
+  if(!entries.length){ showToast('Non c\'è nulla da cancellare'); return; }
+  if(!window.confirm('Cancellare tutti i dati salvati? Questa azione non può essere annullata.')) return;
+  entries = [];
+  await persistEntries(entries);
+  renderHistory();
+  updateGauge();
+  showToast('Tutti i dati sono stati cancellati');
+});
+
+// ---- Init ----
+(async function init(){
+  document.getElementById('todayLabel').textContent =
+    new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+  document.getElementById('dt').value = nowLocalInputValue();
+  entries = await loadEntries();
+  renderHistory();
+  updateGauge();
+})();
+</script>
+</body>
+</html>
