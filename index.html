@@ -3,7 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#34C759">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Diario IBS">
 <title>Diario IBS</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -53,7 +58,7 @@
   .meta-item svg{ width:13px; height:13px; flex-shrink:0; }
 
   /* ---- Gauge card ---- */
-  .gauge-card{ background:var(--card); border:1px solid var(--card-border); border-radius:var(--radius-xl); padding:18px 20px; margin-top:14px; box-shadow:none; }
+  .gauge-card{ background:var(--card); border:1px solid var(--card-border); border-radius:var(--radius-xl); padding:18px 20px; margin-top:22px; box-shadow:none; }
   .gauge-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
   .gauge-title{ font-size:15px; font-weight:700; }
   .gauge-count{ font-size:13px; color:var(--ink-faint); font-weight:600; }
@@ -182,6 +187,31 @@
   .success-bubble svg{ width:38px; height:38px; }
   .success-bubble span{ font-size:12px; font-weight:700; }
 
+  /* title unwraps when card is expanded */
+  .entry-card:has(.entry-detail.open) .entry-food{ white-space:normal; overflow:visible; text-overflow:unset; }
+
+  /* ---- Search bar ---- */
+  .search-wrap{ position:relative; margin-bottom:14px; background:var(--card); border:1px solid var(--card-border); border-radius:var(--radius-lg); display:flex; align-items:center; gap:12px; padding:0 14px; min-height:44px; }
+  .search-icon{ display:flex; align-items:center; flex-shrink:0; color:var(--ink-faint); pointer-events:none; }
+  .search-icon svg{ width:16px; height:16px; display:block; }
+  .search-input{ flex:1; background:transparent; border:none; padding:0; height:44px; font-family:'Plus Jakarta Sans',sans-serif; font-size:14px; color:var(--ink); outline:none; -webkit-appearance:none; }
+  .search-input::placeholder{ color:var(--ink-faint); }
+  .search-clear{ background:var(--ink-faint); color:#fff; border:none; border-radius:999px; width:18px; height:18px; font-size:13px; cursor:pointer; display:none; align-items:center; justify-content:center; line-height:1; padding:0; flex-shrink:0; }
+  .search-clear.visible{ display:flex; }
+
+  /* ---- Export modal ---- */
+  .export-modal-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:40; display:none; align-items:flex-end; justify-content:center; }
+  .export-modal-overlay.open{ display:flex; }
+  .export-modal{ background:var(--card); border-radius:28px 28px 0 0; width:100%; max-width:430px; padding:20px 16px max(24px,env(safe-area-inset-bottom)); }
+  .export-modal-handle{ width:36px; height:4px; background:#D1D1D6; border-radius:999px; margin:0 auto 16px; }
+  .export-modal-title{ font-size:16px; font-weight:800; margin:0 0 14px 4px; }
+  .export-opt{ display:flex; align-items:center; gap:14px; background:var(--bg); border:none; border-radius:var(--radius-lg); padding:14px 16px; width:100%; margin-bottom:10px; cursor:pointer; font-family:inherit; text-align:left; }
+  .export-opt-icon{ width:40px; height:40px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .export-opt-icon svg{ width:20px; height:20px; }
+  .export-opt-text .et-main{ font-size:14px; font-weight:700; color:var(--ink); }
+  .export-opt-text .et-sub{ font-size:12px; color:var(--ink-muted); margin-top:1px; }
+  .export-cancel{ width:100%; background:none; border:none; color:var(--ink-muted); font-size:14px; font-weight:700; padding:12px; cursor:pointer; font-family:inherit; margin-top:2px; }
+
   @keyframes slideInCard{ from{ opacity:0; transform:translateY(-8px); } to{ opacity:1; transform:translateY(0); } }
   .entry-card.new-entry{ animation:slideInCard 0.3s ease forwards; }
 
@@ -242,6 +272,11 @@
   </nav>
 
   <section id="panel-history" class="panel active">
+    <div class="search-wrap">
+      <span class="search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <input class="search-input" id="searchInput" type="text" placeholder="Cerca per cibo, sintomo, pasto…">
+      <button class="search-clear" id="searchClear" type="button" aria-label="Cancella ricerca">×</button>
+    </div>
     <div id="historyList"></div>
   </section>
   <section id="panel-stats" class="panel">
@@ -363,6 +398,27 @@
   </div>
 </div>
 
+<!-- Export modal -->
+<div class="export-modal-overlay" id="exportModal">
+  <div class="export-modal">
+    <div class="export-modal-handle"></div>
+    <p class="export-modal-title">Esporta inserimenti</p>
+    <button class="export-opt" id="exportPdfBtn" type="button">
+      <div class="export-opt-icon" style="background:rgba(255,59,48,0.1);color:#FF3B30;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15v-4M9 15h2a1.5 1.5 0 000-3H9M14 11v4M17 11v4M17 13h-3"/></svg>
+      </div>
+      <div class="export-opt-text"><div class="et-main">Esporta come PDF</div><div class="et-sub">Apre la finestra di stampa del browser</div></div>
+    </button>
+    <button class="export-opt" id="exportJsonBtn" type="button">
+      <div class="export-opt-icon" style="background:rgba(52,199,89,0.1);color:#28A745;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+      </div>
+      <div class="export-opt-text"><div class="et-main">Esporta come JSON</div><div class="et-sub">File dati per backup o importazione</div></div>
+    </button>
+    <button class="export-cancel" id="exportCancelBtn" type="button">Annulla</button>
+  </div>
+</div>
+
 <!-- Success -->
 <div class="success-overlay" id="successOverlay">
   <div class="success-bubble">
@@ -375,7 +431,7 @@
 
 <script>
 const SK='ibs-diary-entries';
-let entries=[], expandedIds=new Set(), editingId=null, pendingPhoto=null, newEntryId=null;
+let entries=[], expandedIds=new Set(), editingId=null, pendingPhoto=null, newEntryId=null, searchQuery='';
 const CIRC=2*Math.PI*50;
 
 // ---- Food & meal icon map ----
@@ -437,7 +493,19 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   if(b.dataset.tab==='stats')renderStats();
 }));
 
-// ---- Clock ----
+// ---- Search ----
+const searchInput=document.getElementById('searchInput');
+const searchClear=document.getElementById('searchClear');
+searchInput.addEventListener('input',()=>{
+  searchQuery=searchInput.value.trim().toLowerCase();
+  searchClear.classList.toggle('visible', searchQuery.length>0);
+  renderHistory();
+});
+searchClear.addEventListener('click',()=>{
+  searchInput.value=''; searchQuery='';
+  searchClear.classList.remove('visible');
+  renderHistory();
+});
 function updateClock(){const d=new Date();document.getElementById('pillTime').textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
 updateClock();setInterval(updateClock,30000);
 
@@ -528,8 +596,20 @@ function cardHTML(e){
 
 function renderHistory(){
   const list=document.getElementById('historyList');
-  if(!entries.length){list.innerHTML=`<p class="empty">Nessun inserimento ancora.<br>Tocca <strong>+</strong> per aggiungere il primo.</p>`;return;}
-  const sorted=[...entries].sort((a,b)=>(b.dateISO+b.time).localeCompare(a.dateISO+a.time));
+  let pool=entries;
+  if(searchQuery){
+    pool=entries.filter(e=>{
+      const hay=[(e.food||''),(e.notes||''),(e.mealType||''),...(e.symptoms||[])].join(' ').toLowerCase();
+      return hay.includes(searchQuery);
+    });
+  }
+  if(!pool.length){
+    list.innerHTML=searchQuery
+      ?`<p class="empty">Nessun risultato per "<strong>${esc(searchQuery)}</strong>".</p>`
+      :`<p class="empty">Nessun inserimento ancora.<br>Tocca <strong>+</strong> per aggiungere il primo.</p>`;
+    return;
+  }
+  const sorted=[...pool].sort((a,b)=>(b.dateISO+b.time).localeCompare(a.dateISO+a.time));
   let html='',last=null;
   for(const e of sorted){if(e.dateISO!==last){html+=`<p class="date-heading">${fmtDate(e.dateISO)}</p>`;last=e.dateISO;}html+=cardHTML(e);}
   list.innerHTML=html;
@@ -546,11 +626,32 @@ function renderStats(){
   if(!entries.length){el.innerHTML='<p class="empty">Nessun dato disponibile.</p>';return;}
   const total=entries.length;
   const avg=(entries.reduce((s,e)=>s+Number(e.intensity),0)/total).toFixed(1);
+  // Top symptoms
   const sc={};entries.forEach(e=>(e.symptoms||[]).filter(s=>s!=='Nessun sintomo').forEach(s=>sc[s]=(sc[s]||0)+1));
   const top=Object.entries(sc).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  // Most logged meal
   const mc={};entries.forEach(e=>{if(e.mealType)mc[e.mealType]=(mc[e.mealType]||0)+1;});
   const topMeal=Object.entries(mc).sort((a,b)=>b[1]-a[1])[0];
-  el.innerHTML=`<div class="stat-card"><div class="stat-title">Riepilogo generale</div><div class="stat-row"><span class="stat-label">Inserimenti totali</span><strong>${total}</strong></div><div class="stat-row"><span class="stat-label">Intensità media</span><strong>${avg}/5</strong></div>${topMeal?`<div class="stat-row"><span class="stat-label">Pasto più registrato</span><strong>${esc(topMeal[0])}</strong></div>`:''}</div>${top.length?`<div class="stat-card"><div class="stat-title">Sintomi più frequenti</div>${top.map(([s,n])=>`<div class="stat-row"><span class="stat-label">${esc(s)}</span><strong>${n}x</strong></div>`).join('')}</div>`:''}`;
+  // Meal that causes most symptoms (avg symptom count per entry grouped by meal)
+  const mealSymCount={}, mealSymEntries={};
+  entries.forEach(e=>{
+    if(!e.mealType)return;
+    const symCount=(e.symptoms||[]).filter(s=>s!=='Nessun sintomo').length;
+    mealSymCount[e.mealType]=(mealSymCount[e.mealType]||0)+symCount;
+    mealSymEntries[e.mealType]=(mealSymEntries[e.mealType]||0)+1;
+  });
+  const mealSymAvg=Object.entries(mealSymEntries)
+    .filter(([m])=>mealSymEntries[m]>=2) // at least 2 entries to be meaningful
+    .map(([m])=>([m,(mealSymCount[m]/mealSymEntries[m]).toFixed(1)]))
+    .sort((a,b)=>b[1]-a[1]);
+  const worstMeal=mealSymAvg[0]||null;
+  el.innerHTML=`
+    <div class="stat-card"><div class="stat-title">Riepilogo generale</div>
+      <div class="stat-row"><span class="stat-label">Inserimenti totali</span><strong>${total}</strong></div>
+      <div class="stat-row"><span class="stat-label">Intensità media</span><strong>${avg}/5</strong></div>
+      ${worstMeal?`<div class="stat-row"><span class="stat-label">Pasto con più sintomi</span><strong>${esc(worstMeal[0])}</strong></div>`:''}
+    </div>
+    ${top.length?`<div class="stat-card"><div class="stat-title">Sintomi più frequenti</div>${top.map(([s,n])=>`<div class="stat-row"><span class="stat-label">${esc(s)}</span><strong>${n}x</strong></div>`).join('')}</div>`:''}`;
 }
 
 // ---- Edit ----
@@ -599,21 +700,52 @@ document.getElementById('entryForm').addEventListener('submit',async ev=>{
   }
 });
 
-// ---- Export / Clear ----
-document.getElementById('exportBtn').addEventListener('click',async()=>{
-  menuPanel.classList.remove('open');if(!entries.length){toast('Nessun dato');return;}
+// ---- Export modal ----
+const exportModal=document.getElementById('exportModal');
+document.getElementById('exportBtn').addEventListener('click',()=>{
+  menuPanel.classList.remove('open');
+  if(!entries.length){toast('Nessun dato');return;}
+  exportModal.classList.add('open');
+});
+document.getElementById('exportCancelBtn').addEventListener('click',()=>exportModal.classList.remove('open'));
+exportModal.addEventListener('click',e=>{if(e.target===exportModal)exportModal.classList.remove('open');});
+
+document.getElementById('exportJsonBtn').addEventListener('click',()=>{
+  exportModal.classList.remove('open');
   const sorted=[...entries].sort((a,b)=>(a.dateISO+a.time).localeCompare(b.dateISO+b.time));
-  const payload={exportedAt:new Date().toISOString(),entries:sorted};
-  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),entries:sorted},null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.download=`diario-ibs-inserimenti-${localDate()}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-  toast('Inserimenti esportati');
+  const a=document.createElement('a');a.href=url;a.download=`diario-ibs-${localDate()}.json`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  toast('File JSON scaricato');
+});
+
+document.getElementById('exportPdfBtn').addEventListener('click',()=>{
+  exportModal.classList.remove('open');
+  const sorted=[...entries].sort((a,b)=>(a.dateISO+a.time).localeCompare(b.dateISO+b.time));
+  let rows='',lastDate=null;
+  for(const e of sorted){
+    if(e.dateISO!==lastDate){rows+=`<tr class="date-row"><td colspan="5">${e.dateISO}</td></tr>`;lastDate=e.dateISO;}
+    const syms=(e.symptoms&&e.symptoms.length)?e.symptoms.join(', '):'—';
+    rows+=`<tr><td>${esc(e.time)}</td><td>${esc(e.mealType||'—')}</td><td>${esc(e.food||'—')}</td><td>${syms}</td><td>${e.intensity}/5${e.notes?'<br><em>'+esc(e.notes)+'</em>':''}</td></tr>`;
+  }
+  const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Diario IBS — Riepilogo</title><style>
+    body{font-family:system-ui,sans-serif;font-size:13px;color:#1C1C1E;margin:32px;}
+    h1{font-size:20px;margin:0 0 4px;}
+    .sub{color:#6C6C70;font-size:12px;margin-bottom:24px;}
+    table{width:100%;border-collapse:collapse;}
+    th{text-align:left;padding:8px 10px;border-bottom:2px solid #E5E5EA;font-size:12px;color:#6C6C70;}
+    td{padding:8px 10px;border-bottom:1px solid #F2F2F7;vertical-align:top;}
+    tr.date-row td{background:#F2F2F7;font-weight:700;font-size:12px;color:#6C6C70;padding:6px 10px;}
+    em{color:#6C6C70;}
+    @media print{body{margin:16px;} @page{margin:16mm;}}
+  </style></head><body>
+  <h1>Diario IBS</h1>
+  <div class="sub">Esportato il ${new Date().toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'})} &bull; ${sorted.length} inserimenti</div>
+  <table><thead><tr><th>Ora</th><th>Pasto</th><th>Cibo</th><th>Sintomi</th><th>Intensità / Note</th></tr></thead><tbody>${rows}</tbody></table>
+  <script>window.onload=()=>{window.print();}<\/script></body></html>`;
+  const win=window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
 });
 document.getElementById('clearBtn').addEventListener('click',async()=>{
   menuPanel.classList.remove('open');if(!entries.length){toast('Nessun dato');return;}
@@ -625,6 +757,9 @@ document.getElementById('clearBtn').addEventListener('click',async()=>{
 (async()=>{
   document.getElementById('todayLabel').textContent=new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'});
   entries=await load();renderHistory();updateGauge();
+  if('serviceWorker' in navigator){
+    try{await navigator.serviceWorker.register('service-worker.js');}catch{}
+  }
 })();
 </script>
 </body>
