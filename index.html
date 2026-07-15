@@ -114,10 +114,6 @@
   .stat-val{ font-weight:700; }
 
   /* ---- FAB ---- */
-  .fab{ position:fixed; bottom:30px; right:max(16px, calc(50% - 215px + 16px)); width:58px; height:58px; border-radius:999px; background:var(--green); color:#fff; border:none; cursor:pointer; box-shadow:0 4px 16px rgba(52,199,89,0.45), 0 1px 4px rgba(0,0,0,0.12); display:flex; align-items:center; justify-content:center; z-index:9; transition:transform 0.15s ease; }
-  .fab:active{ transform:scale(0.92); }
-  .fab svg{ width:26px; height:26px; }
-
   /* ---- Sheet ---- */
   .sheet-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0); z-index:20; display:none; align-items:flex-end; justify-content:center; transition:background 0.28s ease; }
   .sheet-overlay.open{ display:flex; background:rgba(0,0,0,0.28); }
@@ -215,6 +211,21 @@
   @keyframes slideInCard{ from{ opacity:0; transform:translateY(-8px); } to{ opacity:1; transform:translateY(0); } }
   .entry-card.new-entry{ animation:slideInCard 0.3s ease forwards; }
 
+  /* ---- FAB group ---- */
+  .fab-group{ position:fixed; bottom:30px; right:max(16px, calc(50% - 215px + 16px)); display:flex; flex-direction:column; align-items:center; gap:12px; z-index:9; }
+  .fab{ width:58px; height:58px; border-radius:999px; background:var(--green); color:#fff; border:none; cursor:pointer; box-shadow:0 4px 16px rgba(52,199,89,0.45), 0 1px 4px rgba(0,0,0,0.12); display:flex; align-items:center; justify-content:center; transition:transform 0.15s ease; }
+  .fab:active{ transform:scale(0.92); }
+  .fab svg{ width:26px; height:26px; }
+  .fab-note{ width:58px; height:58px; border-radius:999px; background:var(--card); border:1px solid var(--card-border); color:var(--ink-muted); cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.1); display:flex; align-items:center; justify-content:center; transition:transform 0.15s ease; }
+  .fab-note:active{ transform:scale(0.92); }
+  .fab-note svg{ width:24px; height:24px; }
+  @media (max-width:480px){ .fab-group{ right:20px; } }
+
+  /* ---- Journal note card style ---- */
+  .entry-card.note-card{ border-left:3px solid #BF5AF2; }
+  .note-icon{ width:44px; height:44px; border-radius:var(--radius-md); flex-shrink:0; display:flex; align-items:center; justify-content:center; background:rgba(191,90,242,0.12); color:#BF5AF2; }
+  .note-icon svg{ width:20px; height:20px; }
+
   .privacy-note{ font-size:11.5px; color:var(--ink-faint); text-align:center; margin:20px 0 4px; line-height:1.6; }
   @media (prefers-reduced-motion:reduce){ .gauge-fg,.success-bubble,.sheet,.chevron-btn svg,.tab{ transition:none; } }
 </style>
@@ -286,10 +297,15 @@
   <p class="privacy-note">I dati restano salvati solo su questo telefono, in questo browser.<br>Usa "Esporta inserimenti" ogni tanto per metterli al sicuro.</p>
 </div>
 
-<!-- FAB -->
-<button class="fab" id="fabBtn" type="button" aria-label="Nuovo inserimento">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-</button>
+<!-- FAB group -->
+<div class="fab-group">
+  <button class="fab-note" id="fabNoteBtn" type="button" aria-label="Nuova nota">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+  </button>
+  <button class="fab" id="fabBtn" type="button" aria-label="Nuovo inserimento">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+</div>
 
 <!-- Sheet -->
 <div class="sheet-overlay" id="sheetOverlay">
@@ -419,6 +435,48 @@
   </div>
 </div>
 
+<!-- Note Sheet -->
+<div class="sheet-overlay" id="noteSheetOverlay">
+  <div class="sheet" id="noteSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-topbar">
+      <h2 class="sheet-title">Come stai?</h2>
+      <button class="sheet-close" id="noteSheetCloseBtn" type="button" aria-label="Chiudi">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-scroll">
+      <form id="noteForm">
+        <div class="field-card">
+          <span class="field-lbl">Come sta andando?</span>
+          <textarea id="noteText" placeholder="Scrivi come ti senti oggi, note sul tuo intestino, osservazioni generali sul periodo…" rows="6" style="margin-top:10px;"></textarea>
+        </div>
+        <div class="date-section">
+          <button type="button" class="date-toggle" id="noteDateToggle">
+            <div class="date-toggle-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span class="date-toggle-text">Data e ora</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="date-toggle-val" id="noteDateDisplayVal">Ora</span>
+              <div class="date-toggle-arrow" id="noteDateArrow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+            </div>
+          </button>
+          <div class="date-expanded" id="noteDateExpanded">
+            <input type="datetime-local" id="noteDt">
+          </div>
+        </div>
+        <div style="height:4px;"></div>
+      </form>
+    </div>
+    <div class="sheet-footer">
+      <button type="submit" form="noteForm" class="save-btn" id="noteSubmitBtn">Salva nota</button>
+    </div>
+  </div>
+</div>
+
 <!-- Success -->
 <div class="success-overlay" id="successOverlay">
   <div class="success-bubble">
@@ -511,7 +569,7 @@ updateClock();setInterval(updateClock,30000);
 
 // ---- Gauge ----
 function updateGauge(){
-  const today=localDate(),td=entries.filter(e=>e.dateISO===today);
+  const today=localDate(),td=entries.filter(e=>e.dateISO===today&&e.type!=='note');
   const fg=document.getElementById('gaugeFg'),vEl=document.getElementById('gaugeValue'),cap=document.getElementById('gaugeCaption');
   if(!td.length){vEl.textContent='–';fg.style.strokeDashoffset=CIRC;cap.textContent='Nessun dato';fg.style.stroke='#34C759';return;}
   const avg=td.reduce((s,e)=>s+Number(e.intensity),0)/td.length;
@@ -580,10 +638,62 @@ document.getElementById('fabBtn').addEventListener('click',()=>{
   openSheet();
 });
 
-// ---- History ----
+// ---- Note sheet ----
+const noteSheetOverlay=document.getElementById('noteSheetOverlay');
+const noteDtInput=document.getElementById('noteDt');
+const noteDateToggle=document.getElementById('noteDateToggle');
+const noteDateExpanded=document.getElementById('noteDateExpanded');
+const noteDateArrow=document.getElementById('noteDateArrow');
+
+function openNoteSheet(){noteSheetOverlay.style.display='flex';requestAnimationFrame(()=>requestAnimationFrame(()=>noteSheetOverlay.classList.add('open')));}
+function closeNoteSheet(){noteSheetOverlay.classList.remove('open');setTimeout(()=>noteSheetOverlay.style.display='none',300);}
+noteSheetOverlay.addEventListener('click',e=>{if(e.target===noteSheetOverlay)closeNoteSheet();});
+document.getElementById('noteSheetCloseBtn').addEventListener('click',closeNoteSheet);
+
+noteDateToggle.addEventListener('click',()=>{
+  const open=noteDateExpanded.classList.toggle('open');
+  noteDateArrow.classList.toggle('open',open);
+});
+noteDtInput.addEventListener('change',()=>document.getElementById('noteDateDisplayVal').textContent=fmtInput(noteDtInput.value));
+
+document.getElementById('fabNoteBtn').addEventListener('click',()=>{
+  document.getElementById('noteForm').reset();
+  noteDtInput.value=nowInput();
+  document.getElementById('noteDateDisplayVal').textContent='Ora';
+  noteDateExpanded.classList.remove('open');
+  noteDateArrow.classList.remove('open');
+  openNoteSheet();
+});
+
+document.getElementById('noteForm').addEventListener('submit',async ev=>{
+  ev.preventDefault();
+  const text=document.getElementById('noteText').value.trim();
+  if(!text){toast('Scrivi qualcosa prima di salvare');return;}
+  const dtVal=noteDtInput.value||nowInput();
+  const[dateISO,time]=dtVal.split('T');
+  const entry={id:Date.now()+'-'+Math.random().toString(36).slice(2,8),type:'note',dateISO,time,noteText:text};
+  entries.unshift(entry);
+  newEntryId=entry.id;
+  const ok=await save(entries);
+  if(ok){
+    closeNoteSheet();
+    showSuccess(()=>{
+      document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab==='history'));
+      document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='panel-history'));
+      renderHistory();updateGauge();
+      const c=document.querySelector(`[data-toggle="${newEntryId}"]`)?.closest('.entry-card');
+      if(c){c.classList.add('new-entry');setTimeout(()=>c.classList.remove('new-entry'),500);}
+    });
+  }
+});
 function fmtDate(iso){const today=localDate();const yd=new Date();yd.setDate(yd.getDate()-1);if(iso===today)return'Oggi';if(iso===localDate(yd))return'Ieri';return new Date(iso+'T00:00:00').toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'});}
 
 function cardHTML(e){
+  if(e.type==='note'){
+    const isOpen=expandedIds.has(e.id);
+    const preview=e.noteText.length>60?e.noteText.slice(0,60)+'…':e.noteText;
+    return`<div class="entry-card note-card"><div class="entry-head"><div class="note-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div><div class="entry-main"><div class="entry-food${isOpen?' ':' '}" style="${isOpen?'white-space:normal;overflow:visible;':'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'}">${esc(isOpen?e.noteText:preview)}</div><div class="entry-meta">Nota &bull; ${esc(e.time)}</div></div><button class="chevron-btn${isOpen?' open':''}" data-toggle="${e.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button></div><div class="entry-detail${isOpen?' open':''}"><div class="detail-actions"><button class="delete-link" data-delete="${e.id}">Elimina</button></div></div></div>`;
+  }
   const isOpen=expandedIds.has(e.id);
   const vis=getVisual(e);
   const iconEl=e.photo?`<img class="entry-icon-img" src="${e.photo}" alt="">`:`<div class="entry-icon" style="background:${hexAlpha(vis.color,0.14)};color:${vis.color};">${vis.svg}</div>`;
@@ -599,7 +709,7 @@ function renderHistory(){
   let pool=entries;
   if(searchQuery){
     pool=entries.filter(e=>{
-      const hay=[(e.food||''),(e.notes||''),(e.mealType||''),...(e.symptoms||[])].join(' ').toLowerCase();
+      const hay=[(e.food||''),(e.notes||''),(e.mealType||''),(e.noteText||''),...(e.symptoms||[])].join(' ').toLowerCase();
       return hay.includes(searchQuery);
     });
   }
@@ -624,30 +734,29 @@ async function handleDelete(id){entries=entries.filter(e=>e.id!==id);expandedIds
 function renderStats(){
   const el=document.getElementById('statsList');
   if(!entries.length){el.innerHTML='<p class="empty">Nessun dato disponibile.</p>';return;}
-  const total=entries.length;
-  const avg=(entries.reduce((s,e)=>s+Number(e.intensity),0)/total).toFixed(1);
-  // Top symptoms
-  const sc={};entries.forEach(e=>(e.symptoms||[]).filter(s=>s!=='Nessun sintomo').forEach(s=>sc[s]=(sc[s]||0)+1));
+  const mealEntries=entries.filter(e=>e.type!=='note');
+  const total=mealEntries.length;
+  if(!total){el.innerHTML='<p class="empty">Nessun dato pasto disponibile.</p>';return;}
+  const avg=(mealEntries.reduce((s,e)=>s+Number(e.intensity),0)/total).toFixed(1);
+  const sc={};mealEntries.forEach(e=>(e.symptoms||[]).filter(s=>s!=='Nessun sintomo').forEach(s=>sc[s]=(sc[s]||0)+1));
   const top=Object.entries(sc).sort((a,b)=>b[1]-a[1]).slice(0,3);
-  // Most logged meal
-  const mc={};entries.forEach(e=>{if(e.mealType)mc[e.mealType]=(mc[e.mealType]||0)+1;});
-  const topMeal=Object.entries(mc).sort((a,b)=>b[1]-a[1])[0];
-  // Meal that causes most symptoms (avg symptom count per entry grouped by meal)
-  const mealSymCount={}, mealSymEntries={};
-  entries.forEach(e=>{
+  const mealSymCount={}, mealSymEntries2={};
+  mealEntries.forEach(e=>{
     if(!e.mealType)return;
     const symCount=(e.symptoms||[]).filter(s=>s!=='Nessun sintomo').length;
     mealSymCount[e.mealType]=(mealSymCount[e.mealType]||0)+symCount;
-    mealSymEntries[e.mealType]=(mealSymEntries[e.mealType]||0)+1;
+    mealSymEntries2[e.mealType]=(mealSymEntries2[e.mealType]||0)+1;
   });
-  const mealSymAvg=Object.entries(mealSymEntries)
-    .filter(([m])=>mealSymEntries[m]>=2) // at least 2 entries to be meaningful
-    .map(([m])=>([m,(mealSymCount[m]/mealSymEntries[m]).toFixed(1)]))
+  const mealSymAvg=Object.entries(mealSymEntries2)
+    .filter(([m])=>mealSymEntries2[m]>=2)
+    .map(([m])=>([m,(mealSymCount[m]/mealSymEntries2[m]).toFixed(1)]))
     .sort((a,b)=>b[1]-a[1]);
   const worstMeal=mealSymAvg[0]||null;
+  const noteCount=entries.filter(e=>e.type==='note').length;
   el.innerHTML=`
     <div class="stat-card"><div class="stat-title">Riepilogo generale</div>
-      <div class="stat-row"><span class="stat-label">Inserimenti totali</span><strong>${total}</strong></div>
+      <div class="stat-row"><span class="stat-label">Inserimenti pasto</span><strong>${total}</strong></div>
+      ${noteCount?`<div class="stat-row"><span class="stat-label">Note personali</span><strong>${noteCount}</strong></div>`:''}
       <div class="stat-row"><span class="stat-label">Intensità media</span><strong>${avg}/5</strong></div>
       ${worstMeal?`<div class="stat-row"><span class="stat-label">Pasto con più sintomi</span><strong>${esc(worstMeal[0])}</strong></div>`:''}
     </div>
